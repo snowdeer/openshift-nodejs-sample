@@ -1,0 +1,77 @@
+apiVersion: v1
+kind: BuildConfig
+metadata:
+  labels:
+    app: nodejs-sample
+  name: nodejs-sample
+spec:
+  failedBuildsHistoryLimit: 3
+  nodeSelector: null
+  postCommit: {}
+  resources: {}
+  runPolicy: Serial
+  source:
+    git:
+      uri: 'https://github.com/snowdeer/openshift-nodejs-sample.git'
+    type: Git
+  strategy:
+    dockerStrategy:
+      from:
+        kind: DockerImage
+        name: 'ubuntu:latest'
+        
+    type: Docker    
+  successfulBuildsHistoryLimit: 5 
+  output:
+    to:
+      kind: ImageStreamTag
+      name: 'nodejs-sample:latest'
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: nodejs-sample
+  labels:
+    app: nodejs-sample
+spec:
+  template:
+    metadata:
+      labels:
+        app: nodejs-sample
+    spec:
+      containers:
+      - image:  snowdeer/nodejs-sample:latest
+        name: nodejs-sample
+        ports:
+        - containerPort: 8080
+          protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nodejs-sample
+  labels:
+    app: nodejs-sample
+spec:
+  ports:
+  - name: nodejs-sample
+    port: 8080
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app: nodejs-sample
+  type: LoadBalancer
+---
+apiVersion: v1
+kind: Route
+metadata:
+  name: nodejs-sample
+  labels:
+    app: nodejs-sample
+spec:
+  port: 
+    targetPort: nodejs-sample
+  to:
+    kind: Service
+    name: nodejs-sample
+    weight: 100
